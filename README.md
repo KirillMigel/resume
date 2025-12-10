@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Resume Lab
 
-## Getting Started
+Интерактивный конструктор резюме: заполняйте информацию о себе, смотрите живой предпросмотр и экспортируйте аккуратный PDF без поломки верстки.
 
-First, run the development server:
+## Возможности
+- **Мгновенный предпросмотр**: любой ввод сразу отображается в правой колонке.
+- **Хранение черновика**: данные автоматически сохраняются в `localStorage` и подгружаются при следующем визите.
+- **Настройка темы**: выбирайте акцентный цвет и плотность блоков.
+- **Экспорт PDF**: кнопка «Скачать» отправляет JSON на `/api/export`, где PDF формируется через `pdfkit` с использованием системного шрифта Helvetica, чтобы файл весил <200 КБ.
 
+## Локальный запуск
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install        # установить зависимости
+npm run dev        # режим разработки на http://localhost:3000
+npm run lint       # статический анализ
+npm run build      # production сборка + проверки TypeScript
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Как пользоваться
+1. Откройте приложение, заполните блоки «Персональные данные», «Опыт», «Навыки» и др. Можно загрузить демо-данные одной кнопкой.
+2. Проверьте предпросмотр и задайте нужный цвет/плотность.
+3. Нажмите «Скачать PDF». Браузер скачает файл `resume-<timestamp>.pdf`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Стек
+- Next.js 16 (App Router, TypeScript)
+- Tailwind CSS v4 (классы прописаны прямо в JSX)
+- pdfkit для серверного построения PDF
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Структура
+```
+src/
+  app/
+    api/export/route.ts   # серверный экспорт PDF
+    layout.tsx, page.tsx  # корневой layout и страница конструктора
+  components/resume/      # форма, предпросмотр, провайдер состояния
+  lib/                    # типы резюме и PDF-генератор
+```

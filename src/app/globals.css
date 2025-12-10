@@ -20,7 +20,50 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: #ffffff;
+  color: #1f2937;
+  font-family: var(--font-inter, "Inter"), system-ui, -apple-system;
+}
+
+.builder-step {
+  --icon-color: #8fa2c2;
+}
+
+.builder-step-active {
+  --icon-color: #218dd0;
+}
+
+.builder-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .builder-grid {
+    grid-template-columns: 260px minmax(0, 600px) 500px;
+    column-gap: 2rem;
+    align-items: start;
+  }
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.5rem 1.4rem;
+  background: #218dd0;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 10px 30px rgba(33, 141, 208, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.action-button:hover {
+  background: #1a75b1;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(33, 141, 208, 0.25);
 }

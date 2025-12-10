@@ -1,65 +1,58 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-white">
+      <div className="mx-auto max-w-6xl px-6 pb-20 pt-10 text-center">
+        <header className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <Image src="/resumio-logo.svg" alt="Resumio" width={143} height={40} priority />
+            <Link
+              href="/dashboard"
+              className="text-base font-medium text-[#333948] transition hover:text-[#218dd0]"
+            >
+              Блог
+            </Link>
+          </div>
+          <Link
+            href="/dashboard"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e3e2e7] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition hover:border-[#218dd0]"
+            aria-label="Профиль"
+          >
+            <Image src="/user.svg" alt="Профиль" width={24} height={24} />
+          </Link>
+        </header>
+
+        <div className="mt-16 flex flex-col items-center gap-6">
+          <Image
+            src="/resume-hero.png"
+            alt="Пример резюме Resumio"
+            width={127}
+            height={112}
+            priority
+          />
+          <h1 className="text-[42px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#212633]">
+            Создайте эффективное резюме
+            <br />
+            <span className="text-[#218dd0]">с правильной подачей опыта</span>
+            <br />
+            за несколько минут
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-[20px] font-normal leading-[130%] tracking-[-0.02em] text-[#8a95a8] mt-0">
+            Чтобы увеличить шанс пройти первичный скрининг
+            <br />
+            и повысить шансы на трудоустройство
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center justify-center rounded-full bg-[#218DD0] px-6 py-3 text-[16px] font-semibold text-white shadow-[0_5px_20px_rgba(24,145,228,0.35)] transition hover:bg-[#0c74c1] mt-2"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            Создать резюме
+          </Link>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
