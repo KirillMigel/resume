@@ -232,10 +232,10 @@ export const ResumeForm = ({
 
   if (activeStep === "education") {
     return (
-      <Card title="Образование">
+      <Card title="">
         <div className="space-y-6">
           {education.map((item) => (
-            <div key={item.id} className="rounded-3xl border border-[#eef1f7] bg-[#f9fbff] p-4 sm:p-5">
+            <div key={item.id} className="space-y-4">
               <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                 <input
                   className={inputBubble}
@@ -250,7 +250,7 @@ export const ResumeForm = ({
                   onChange={(event) => updateEducation(item.id, "degree", event.target.value)}
                 />
               </div>
-              <div className="grid gap-3 md:gap-4 md:grid-cols-2 mt-4">
+              <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                 <input
                   className={inputBubble}
                   placeholder="Уровень (бакалавр, магистр...)"
@@ -264,7 +264,7 @@ export const ResumeForm = ({
                   onChange={(event) => updateEducation(item.id, "location", event.target.value)}
                 />
               </div>
-              <div className="grid gap-3 md:gap-4 md:grid-cols-2 mt-4">
+              <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                 <input
                   className={inputBubble}
                   placeholder="Начало"
@@ -356,9 +356,9 @@ export const ResumeForm = ({
   );
 };
 
-const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Card = ({ title, children }: { title?: string; children: React.ReactNode }) => (
   <section className="rounded-[32px] bg-white p-6 shadow-[0_25px_60px_rgba(28,64,128,0.08)] sm:rounded-[40px] sm:p-8">
-    <p className="mb-5 text-base font-semibold text-[#1f2937] sm:mb-6">{title}</p>
+    {title ? <p className="mb-5 text-base font-semibold text-[#1f2937] sm:mb-6">{title}</p> : null}
     {children}
   </section>
 );
