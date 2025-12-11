@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Education, Experience } from "@/lib/resume-data";
 import { blankEducation, blankExperience } from "@/lib/resume-data";
 import { useResume } from "./resume-provider";
@@ -32,6 +32,7 @@ export const ResumeForm = ({
   const experience = resume.experience;
   const education = resume.education;
   const [skillInput, setSkillInput] = useState("");
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const updatePersonal = (field: keyof typeof resume.personal, value: string) => {
     update((draft) => {
@@ -95,6 +96,19 @@ export const ResumeForm = ({
       draft.skills = draft.skills.filter((item) => item !== skill);
       return draft;
     });
+  };
+
+  const handlePhotoUpload = (file: File | null) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result?.toString() || "";
+      update((draft) => {
+        draft.personal.photo = base64;
+        return draft;
+      });
+    };
+    reader.readAsDataURL(file);
   };
 
   if (activeStep === "experience") {
@@ -174,59 +188,84 @@ export const ResumeForm = ({
 
   if (activeStep === "personal") {
     return (
-      <Card title="Личные данные">
-        <div className="grid gap-3 md:gap-4 md:grid-cols-2">
-          <input
-            className={inputBubble}
-            placeholder="Имя"
-            value={resume.personal.fullName}
-            onChange={(event) => updatePersonal("fullName", event.target.value)}
-          />
-          <input
-            className={inputBubble}
-            placeholder="Фамилия"
-            value={resume.personal.lastName}
-            onChange={(event) => updatePersonal("lastName", event.target.value)}
-          />
-        </div>
-        <div className="mt-4 space-y-4">
-          <input
-            className={inputBubble}
-            placeholder="Желаемая должность"
-            value={resume.personal.title}
-            onChange={(event) => updatePersonal("title", event.target.value)}
-          />
-          <input
-            className={inputBubble}
-            placeholder="Локация"
-            value={resume.personal.location}
-            onChange={(event) => updatePersonal("location", event.target.value)}
-          />
-          <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+      <Card title="">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-24 w-24 overflow-hidden rounded-full border border-[#e0e6f2] bg-[#f9fbff] shadow-[0_10px_25px_rgba(28,64,128,0.08)]">
+              <img
+                src={resume.personal.photo || "/avatar.jpg"}
+                alt="Аватар"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-full border border-[#dfe7f4] px-4 py-2 text-xs font-semibold text-[#218dd0] hover:bg-[#f4f7fb]"
+            >
+              Загрузить фото
+            </button>
             <input
-              className={inputBubble}
-              placeholder="Email"
-              value={resume.personal.email}
-              onChange={(event) => updatePersonal("email", event.target.value)}
-            />
-            <input
-              className={inputBubble}
-              placeholder="Телефон"
-              value={resume.personal.phone}
-              onChange={(event) => updatePersonal("phone", event.target.value)}
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => handlePhotoUpload(event.target.files?.[0] ?? null)}
             />
           </div>
-          <textarea
-            className={`${textAreaBubble} min-h-[120px]`}
-            placeholder="О себе"
-            value={resume.summary}
-            onChange={(event) =>
-              update((draft) => {
-                draft.summary = event.target.value;
-                return draft;
-              })
-            }
-          />
+          <div className="flex-1 space-y-4">
+            <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+              <input
+                className={inputBubble}
+                placeholder="Имя"
+                value={resume.personal.fullName}
+                onChange={(event) => updatePersonal("fullName", event.target.value)}
+              />
+              <input
+                className={inputBubble}
+                placeholder="Фамилия"
+                value={resume.personal.lastName}
+                onChange={(event) => updatePersonal("lastName", event.target.value)}
+              />
+            </div>
+            <input
+              className={inputBubble}
+              placeholder="Желаемая должность"
+              value={resume.personal.title}
+              onChange={(event) => updatePersonal("title", event.target.value)}
+            />
+            <input
+              className={inputBubble}
+              placeholder="Локация"
+              value={resume.personal.location}
+              onChange={(event) => updatePersonal("location", event.target.value)}
+            />
+            <div className="grid gap-3 md:gap-4 md:grid-cols-2">
+              <input
+                className={inputBubble}
+                placeholder="Email"
+                value={resume.personal.email}
+                onChange={(event) => updatePersonal("email", event.target.value)}
+              />
+              <input
+                className={inputBubble}
+                placeholder="Телефон"
+                value={resume.personal.phone}
+                onChange={(event) => updatePersonal("phone", event.target.value)}
+              />
+            </div>
+            <textarea
+              className={`${textAreaBubble} min-h-[120px]`}
+              placeholder="О себе"
+              value={resume.summary}
+              onChange={(event) =>
+                update((draft) => {
+                  draft.summary = event.target.value;
+                  return draft;
+                })
+              }
+            />
+          </div>
         </div>
         <FormNav canPrev={canPrev} canNext={canNext} onPrev={onPrev} onNext={onNext} />
       </Card>

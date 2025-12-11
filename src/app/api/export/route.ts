@@ -7,6 +7,9 @@ import type {
   LinkItem,
 } from "@/lib/resume-data";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const ensureString = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 const mapArray = <T, R>(value: unknown, mapper: (item: T) => R): R[] =>
   Array.isArray(value) ? (value as T[]).map(mapper) : [];
