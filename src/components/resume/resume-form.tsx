@@ -44,17 +44,18 @@ export const ResumeForm = ({
     if (!draft.experience.length) {
       draft.experience.push(blankExperience());
     }
-    return draft.experience[0];
   };
 
-  const updateExperience = <K extends keyof Experience>(field: K, value: Experience[K]) => {
+  const updateExperience = <K extends keyof Experience>(id: string, field: K, value: Experience[K]) => {
     update((draft) => {
-      const target = ensureExperience(draft);
-      target[field] = value;
+      ensureExperience(draft);
+      const target = draft.experience.find((item) => item.id === id);
+      if (target) {
+        target[field] = value;
+      }
       return draft;
     });
   };
-
   const addExperience = () => {
     update((draft) => {
       draft.experience.push(blankExperience());
@@ -107,13 +108,13 @@ export const ResumeForm = ({
                   className={inputBubble}
                   placeholder="Должность"
                   value={item.role || ""}
-                  onChange={(event) => updateExperience("role", event.target.value)}
+                  onChange={(event) => updateExperience(item.id, "role", event.target.value)}
                 />
                 <input
                   className={inputBubble}
                   placeholder="Компания"
                   value={item.company || ""}
-                  onChange={(event) => updateExperience("company", event.target.value)}
+                  onChange={(event) => updateExperience(item.id, "company", event.target.value)}
                 />
               </div>
               <div className="mt-4 grid gap-3 md:gap-4 md:grid-cols-2">
@@ -121,13 +122,13 @@ export const ResumeForm = ({
                   className={inputBubble}
                   placeholder="Начало работы"
                   value={item.startDate || ""}
-                  onChange={(event) => updateExperience("startDate", event.target.value)}
+                  onChange={(event) => updateExperience(item.id, "startDate", event.target.value)}
                 />
                 <input
                   className={inputBubble}
                   placeholder="Конец работы"
                   value={item.endDate || ""}
-                  onChange={(event) => updateExperience("endDate", event.target.value)}
+                  onChange={(event) => updateExperience(item.id, "endDate", event.target.value)}
                 />
               </div>
               <button
@@ -135,7 +136,7 @@ export const ResumeForm = ({
                 className={`mt-4 rounded-full border px-4 py-2 text-sm font-semibold ${
                   item.current ? "border-[#1891e4] text-[#1891e4]" : "border-[#dfe7f4] text-[#7a879d]"
                 }`}
-                onClick={() => updateExperience("current", !item.current)}
+                onClick={() => updateExperience(item.id, "current", !item.current)}
               >
                 Сейчас работаю тут
               </button>
@@ -143,13 +144,13 @@ export const ResumeForm = ({
                 className={`${inputBubble} mt-4`}
                 placeholder="Локация"
                 value={item.location || ""}
-                onChange={(event) => updateExperience("location", event.target.value)}
+                onChange={(event) => updateExperience(item.id, "location", event.target.value)}
               />
               <textarea
                 className={`${textAreaBubble} mt-4 min-h-[140px]`}
                 placeholder="Обязанности"
                 value={item.description || ""}
-                onChange={(event) => updateExperience("description", event.target.value)}
+                onChange={(event) => updateExperience(item.id, "description", event.target.value)}
               />
             </div>
           ))}
