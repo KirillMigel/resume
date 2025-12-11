@@ -64,6 +64,16 @@ export const ResumeForm = ({
     });
   };
 
+  const removeExperience = (id: string) => {
+    update((draft) => {
+      draft.experience = draft.experience.filter((item) => item.id !== id);
+      if (!draft.experience.length) {
+        draft.experience.push(blankExperience());
+      }
+      return draft;
+    });
+  };
+
   const updateEducation = <K extends keyof Education>(id: string, field: K, value: Education[K]) => {
     update((draft) => {
       const target = draft.education.find((item) => item.id === id);
@@ -77,6 +87,16 @@ export const ResumeForm = ({
   const addEducation = () => {
     update((draft) => {
       draft.education.push(blankEducation());
+      return draft;
+    });
+  };
+
+  const removeEducation = (id: string) => {
+    update((draft) => {
+      draft.education = draft.education.filter((item) => item.id !== id);
+      if (!draft.education.length) {
+        draft.education.push(blankEducation());
+      }
       return draft;
     });
   };
@@ -169,6 +189,15 @@ export const ResumeForm = ({
                 value={item.description || ""}
                 onChange={(event) => updateExperience(item.id, "description", event.target.value)}
               />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => removeExperience(item.id)}
+                  className="rounded-full border border-[#f0dada] px-4 py-2 text-sm font-semibold text-[#d03b3b] hover:bg-[#fff2f2]"
+                >
+                  Удалить
+                </button>
+              </div>
             </div>
           ))}
           <div className="flex items-center justify-start">
@@ -326,6 +355,15 @@ export const ResumeForm = ({
                 value={item.description || ""}
                 onChange={(event) => updateEducation(item.id, "description", event.target.value)}
               />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => removeEducation(item.id)}
+                  className="rounded-full border border-[#f0dada] px-4 py-2 text-sm font-semibold text-[#d03b3b] hover:bg-[#fff2f2]"
+                >
+                  Удалить
+                </button>
+              </div>
             </div>
           ))}
           <div className="flex items-center justify-start">

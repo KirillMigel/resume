@@ -36,7 +36,7 @@ const safeRead = (filepath: string) => {
 };
 
 export const createResumePdf = (resume: ResumeData) =>
-  new Promise<Buffer>((resolve) => {
+  new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({ size: "A4", margin: 40 });
     const chunks: Buffer[] = [];
     const accent = resume.theme?.accent || "#218dd0";
@@ -59,6 +59,7 @@ export const createResumePdf = (resume: ResumeData) =>
     }
 
     doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("error", (err) => reject(err));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
 
     const headerColor = "#0f172a";
