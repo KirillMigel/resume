@@ -120,17 +120,17 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-white pb-16">
-      <div className="mx-auto max-w-[1240px] px-4 pt-12 lg:px-0">
-        <section className="space-y-8">
-          <div className="flex items-center justify-between gap-6">
+      <div className="mx-auto max-w-[1240px] px-4 pt-10 lg:px-0">
+        <section className="space-y-6">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
-            <Image src="/resumio-logo.svg" alt="Resumio" width={143} height={40} priority />
+              <Image src="/resumio-logo.svg" alt="Resumio" width={143} height={40} priority />
             </div>
-            <div
-              className="relative"
-              onMouseEnter={() => setProfileOpen(true)}
-            >
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e3e2e7] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+            <div className="relative">
+              <div
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e3e2e7] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
+                onMouseEnter={() => setProfileOpen(true)}
+              >
                 <Image src="/user.svg" alt="Профиль" width={24} height={24} />
               </div>
               {isProfileOpen && (
@@ -151,13 +151,15 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <h1 className="text-[32px] font-semibold leading-[1.1] tracking-[-0.02em] text-[#1c2335]">Мои резюме</h1>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-[26px] font-semibold leading-[1.1] tracking-[-0.02em] text-[#1c2335] sm:text-[32px]">
+              Мои резюме
+            </h1>
             <button
               type="button"
               onClick={handleCreate}
               disabled={status === "loading"}
-              className="flex items-center gap-2 rounded-full bg-[#218dd0] px-4 py-2.5 text-[15px] font-semibold tracking-[-0.01em] text-white shadow-[0_8px_24px_rgba(33,141,208,0.25)] transition hover:bg-[#0a78d2] disabled:cursor-not-allowed disabled:bg-[#8bbfed]"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-[#218dd0] px-4 py-2.5 text-[15px] font-semibold tracking-[-0.01em] text-white shadow-[0_8px_24px_rgba(33,141,208,0.25)] transition hover:bg-[#0a78d2] disabled:cursor-not-allowed disabled:bg-[#8bbfed] sm:w-auto"
             >
               <Image src="/plus.svg" alt="+" width={20} height={20} />
               <span className="leading-none">Создать резюме</span>
@@ -171,13 +173,13 @@ export default function DashboardPage() {
               У вас пока нет резюме. Нажмите «Создать новое», чтобы начать.
             </div>
           ) : (
-          <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
               {items.map((resume) => {
                 const date = formatDate(resume.updated_at) || "—";
                 const isMenuOpen = openMenuId === resume.id;
                 return (
-              <article
-                key={resume.id}
+                  <article
+                    key={resume.id}
                     role="button"
                     tabIndex={0}
                     onClick={() => handleOpenResume(resume.id)}
@@ -187,9 +189,9 @@ export default function DashboardPage() {
                         handleOpenResume(resume.id);
                       }
                     }}
-                    className="group relative flex cursor-pointer items-center justify-between rounded-[28px] bg-white px-5 py-4 shadow-[0_5px_25px_rgba(120,120,120,0.1)] transition hover:shadow-[0_7px_30px_rgba(120,120,120,0.12)] focus:outline-none focus:ring-2 focus:ring-[#0b85e9]/50"
+                    className="group relative flex cursor-pointer flex-col gap-3 rounded-[28px] bg-white px-5 py-4 shadow-[0_5px_25px_rgba(120,120,120,0.1)] transition hover:shadow-[0_7px_30px_rgba(120,120,120,0.12)] focus:outline-none focus:ring-2 focus:ring-[#0b85e9]/50 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4">
                       <img
                         src={resume.photo || "/avatar.jpg"}
                     alt="avatar"
@@ -197,14 +199,14 @@ export default function DashboardPage() {
                         height={58}
                         className="h-[58px] w-[58px] rounded-2xl object-cover"
                   />
-                  <div>
-                        <p className="text-lg font-semibold text-[#1c2335] transition-colors group-hover:text-[#218dd0]">
+                      <div>
+                        <p className="text-base font-semibold text-[#1c2335] transition-colors group-hover:text-[#218dd0] sm:text-lg">
                           {resume.role || resume.title || "Резюме"}
                         </p>
                         <p className="text-sm text-[#8a96ad]">{date}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 self-end sm:self-auto">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -244,11 +246,11 @@ export default function DashboardPage() {
                   </button>
                         </div>
                       )}
-                </div>
-              </article>
+                    </div>
+                  </article>
                 );
               })}
-          </div>
+            </div>
           )}
         </section>
       </div>

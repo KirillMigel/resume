@@ -27,15 +27,15 @@ export const ResumePreview = () => {
   );
 
   return (
-    <div className="flex h-full flex-col rounded-[40px] bg-white px-8 py-8 shadow-[0_35px_90px_rgba(23,56,108,0.08)]">
+    <div className="flex h-full flex-col rounded-[28px] bg-white px-5 py-6 shadow-[0_25px_70px_rgba(23,56,108,0.08)] sm:rounded-[40px] sm:px-8 sm:py-8">
       <div className="flex items-start gap-4">
-        <div className="h-16 w-16 overflow-hidden rounded-full border-4 border-white shadow-[0_10px_25px_rgba(15,23,42,0.18)]">
+        <div className="h-14 w-14 overflow-hidden rounded-full border-4 border-white shadow-[0_10px_25px_rgba(15,23,42,0.18)] sm:h-16 sm:w-16">
           <img src={photoSrc} alt="Avatar" className="h-full w-full object-cover" />
         </div>
         <div className="space-y-1">
-          <p className="text-[20px] font-semibold leading-[1.2] text-[#1d2433]">{fullName || "Имя Фамилия"}</p>
-          <p className="text-[16px] font-normal text-[#3b4554]">{resume.personal.title || "Product Designer"}</p>
-          <div className="mt-2 space-y-1 text-[14px] text-[#4b5565]">
+          <p className="text-[18px] font-semibold leading-[1.2] text-[#1d2433] sm:text-[20px]">{fullName || "Имя Фамилия"}</p>
+          <p className="text-[15px] font-normal text-[#3b4554] sm:text-[16px]">{resume.personal.title || "Product Designer"}</p>
+          <div className="mt-2 space-y-1 text-[13px] text-[#4b5565] sm:text-[14px]">
             {contacts.row1.length ? (
               <div className="flex flex-wrap items-center gap-2">
                 {contacts.row1.map((item, idx) => (

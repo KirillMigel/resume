@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ExportButton } from "./export-button";
 import { ResumeForm } from "./resume-form";
@@ -10,7 +10,6 @@ import { ResumeProvider } from "./resume-provider";
 import type { ResumeStep } from "./types";
 import { useAuth } from "../auth/auth-provider";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 
 type Step = { id: ResumeStep; label: string; icon: StepIcon };
 type StepIcon = "user" | "briefcase" | "book" | "target";
@@ -34,6 +33,8 @@ export const ResumeBuilder = ({ resumeId }: { resumeId?: string }) => {
   }, [session, isLoading, router]);
 
   const [activeStep, setActiveStep] = useState<ResumeStep>("personal");
+  const [isMobile, setIsMobile] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const activeIndex = Math.max(
     0,
     steps.findIndex((step) => step.id === activeStep),
@@ -50,15 +51,27 @@ export const ResumeBuilder = ({ resumeId }: { resumeId?: string }) => {
     };
   }, [activeIndex]);
 
+  useEffect(() => {
+    const updateIsMobile = () => setIsMobile(window.innerWidth < 1024);
+    updateIsMobile();
+    window.addEventListener("resize", updateIsMobile);
+    return () => window.removeEventListener("resize", updateIsMobile);
+  }, []);
+
+  useEffect(() => {
+    // На десктопе всегда показываем превью, на мобиле скрываем по умолчанию
+    setShowPreview(!isMobile);
+  }, [isMobile]);
+
   return (
     <ResumeProvider resumeId={resumeId}>
-      <div className="min-h-screen bg-white py-8">
-        <div className="mx-auto max-w-[1380px] space-y-8 px-4 sm:px-6 lg:px-0">
-          <header className="flex items-center justify-between">
+      <div className="min-h-screen bg-white py-6 sm:py-8">
+        <div className="mx-auto max-w-[1380px] space-y-6 px-4 sm:px-6 lg:px-0">
+          <header className="flex flex-wrap items-center justify-between gap-4">
             <Link
               href="/dashboard"
               aria-label="Назад к моим резюме"
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-[#dfe8f4] text-[#5f6b84] transition hover:border-[#218dd0] hover:text-[#218dd0]"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dfe8f4] text-[#5f6b84] transition hover:border-[#218dd0] hover:text-[#218dd0]"
             >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
@@ -70,21 +83,47 @@ export const ResumeBuilder = ({ resumeId }: { resumeId?: string }) => {
                 />
               </svg>
             </Link>
-            <ExportButton />
+            <div className="flex items-center gap-3">
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => setShowPreview((prev) => !prev)}
+                  className="rounded-full border border-[#dfe8f4] px-4 py-2 text-sm font-semibold text-[#1f2937] shadow-[0_12px_30px_rgba(17,24,39,0.08)] transition hover:border-[#218dd0]"
+                >
+                  {showPreview ? "Скрыть превью" : "Показать превью"}
+                </button>
+              )}
+              <ExportButton />
+            </div>
           </header>
 
-          <div className="builder-grid">
-            <StepSidebar activeStep={activeStep} onSelect={setActiveStep} />
-            <ResumeForm
-              activeLabel={activeConfig?.label ?? ""}
-              activeStep={activeStep}
-              onPrev={prevStep}
-              onNext={nextStep}
-              canPrev={canPrev}
-              canNext={canNext}
-            />
-            <ResumePreview />
-          </div>
+          {isMobile ? (
+            <div className="space-y-4">
+              <MobileStepNav activeStep={activeStep} onSelect={setActiveStep} />
+              <ResumeForm
+                activeLabel={activeConfig?.label ?? ""}
+                activeStep={activeStep}
+                onPrev={prevStep}
+                onNext={nextStep}
+                canPrev={canPrev}
+                canNext={canNext}
+              />
+              {showPreview && <ResumePreview />}
+            </div>
+          ) : (
+            <div className="builder-grid">
+              <StepSidebar activeStep={activeStep} onSelect={setActiveStep} />
+              <ResumeForm
+                activeLabel={activeConfig?.label ?? ""}
+                activeStep={activeStep}
+                onPrev={prevStep}
+                onNext={nextStep}
+                canPrev={canPrev}
+                canNext={canNext}
+              />
+              <ResumePreview />
+            </div>
+          )}
         </div>
       </div>
     </ResumeProvider>
@@ -213,4 +252,33 @@ const StepSidebar = ({
       })}
     </ul>
   </aside>
+);
+
+const MobileStepNav = ({
+  activeStep,
+  onSelect,
+}: {
+  activeStep: ResumeStep;
+  onSelect: (step: ResumeStep) => void;
+}) => (
+  <div className="-mx-2 overflow-x-auto pb-1">
+    <div className="flex gap-2 px-2">
+      {steps.map((step) => {
+        const isActive = step.id === activeStep;
+        return (
+          <button
+            key={step.id}
+            type="button"
+            onClick={() => onSelect(step.id)}
+            className={`flex items-center gap-2 whitespace-nowrap rounded-full border px-3 py-2 text-sm font-semibold transition ${
+              isActive ? "border-[#218dd0] bg-[#e7f3fb] text-[#0b85e9]" : "border-[#e5e7eb] text-[#2f3644]"
+            }`}
+          >
+            <span className="text-[#6b7280]">{iconMap[step.icon]}</span>
+            <span>{step.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
 );

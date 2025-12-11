@@ -6,9 +6,9 @@ import { useResume } from "./resume-provider";
 import type { ResumeStep } from "./types";
 
 const inputBubble =
-  "w-full rounded-[999px] border border-[#e0e6f2] bg-[#f9fbff] px-5 py-3 text-sm text-[#1f2937] placeholder-[#a1aec6] focus:border-[#218dd0] focus:bg-white focus:outline-none";
+  "w-full rounded-[999px] border border-[#e0e6f2] bg-[#f9fbff] px-4 py-3 text-sm text-[#1f2937] placeholder-[#a1aec6] focus:border-[#218dd0] focus:bg-white focus:outline-none sm:px-5";
 const textAreaBubble =
-  "w-full rounded-[32px] border border-[#e0e6f2] bg-[#f9fbff] px-5 py-4 text-sm text-[#1f2937] placeholder-[#a1aec6] focus:border-[#218dd0] focus:bg-white focus:outline-none";
+  "w-full rounded-[32px] border border-[#e0e6f2] bg-[#f9fbff] px-4 py-4 text-sm text-[#1f2937] placeholder-[#a1aec6] focus:border-[#218dd0] focus:bg-white focus:outline-none sm:px-5";
 
 type ResumeFormProps = {
   activeStep: ResumeStep;
@@ -55,7 +55,7 @@ export const ResumeForm = ({
   if (activeStep === "experience") {
     return (
       <Card title="Опыт работы">
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:gap-4 md:grid-cols-2">
           <input
             className={inputBubble}
             placeholder="Должность"
@@ -69,7 +69,7 @@ export const ResumeForm = ({
             onChange={(event) => updateExperience("company", event.target.value)}
           />
         </div>
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div className="mt-4 grid gap-3 md:gap-4 md:grid-cols-2">
           <input
             className={inputBubble}
             placeholder="Начало работы"
@@ -105,7 +105,7 @@ export const ResumeForm = ({
           onChange={(event) => updateExperience("description", event.target.value)}
         />
         <div className="mt-4 flex justify-start">
-          <button className="rounded-full border border-[#dfe7f4] px-4 py-2 text-sm font-semibold text-[#218dd0] shadow-[0_10px_25px_rgba(33,141,208,0.15)]">
+          <button className="w-full rounded-full border border-[#dfe7f4] px-4 py-2 text-sm font-semibold text-[#218dd0] shadow-[0_10px_25px_rgba(33,141,208,0.15)] sm:w-auto">
             ✦ Улучшить с ИИ
           </button>
         </div>
@@ -120,7 +120,7 @@ export const ResumeForm = ({
   if (activeStep === "personal") {
     return (
       <Card title="Личные данные">
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-3 md:gap-4 md:grid-cols-2">
           <input
             className={inputBubble}
             placeholder="Имя"
@@ -147,7 +147,7 @@ export const ResumeForm = ({
             value={resume.personal.location}
             onChange={(event) => updatePersonal("location", event.target.value)}
           />
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-3 md:gap-4 md:grid-cols-2">
             <input
               className={inputBubble}
               placeholder="Email"
@@ -187,8 +187,8 @@ export const ResumeForm = ({
 };
 
 const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="rounded-[40px] bg-white p-8 shadow-[0_35px_80px_rgba(28,64,128,0.08)]">
-    <p className="mb-6 text-base font-semibold text-[#1f2937]">{title}</p>
+  <section className="rounded-[32px] bg-white p-6 shadow-[0_25px_60px_rgba(28,64,128,0.08)] sm:rounded-[40px] sm:p-8">
+    <p className="mb-5 text-base font-semibold text-[#1f2937] sm:mb-6">{title}</p>
     {children}
   </section>
 );
@@ -204,12 +204,12 @@ const FormNav = ({
   onPrev: () => void;
   onNext: () => void;
 }) => (
-  <div className="mt-8 flex items-center justify-between">
+  <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <button
       type="button"
       onClick={onPrev}
       disabled={!canPrev}
-      className="rounded-full border border-[#dfe7f4] px-6 py-2 text-sm font-semibold text-[#5f6b84] disabled:cursor-not-allowed disabled:opacity-50"
+      className="w-full rounded-full border border-[#dfe7f4] px-6 py-2 text-sm font-semibold text-[#5f6b84] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
     >
       Назад
     </button>
@@ -217,7 +217,7 @@ const FormNav = ({
       type="button"
       onClick={onNext}
       disabled={!canNext}
-      className="rounded-full bg-[#1891e4] px-8 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(24,145,228,0.35)] disabled:cursor-not-allowed disabled:bg-[#8bbfed]"
+      className="w-full rounded-full bg-[#1891e4] px-8 py-2 text-sm font-semibold text-white shadow-[0_10px_30px_rgba(24,145,228,0.35)] disabled:cursor-not-allowed disabled:bg-[#8bbfed] sm:w-auto"
     >
       Далее
     </button>
