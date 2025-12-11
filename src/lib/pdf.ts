@@ -24,6 +24,17 @@ const dataUrlToBuffer = (value: string | undefined | null) => {
   }
 };
 
+const safeRead = (filepath: string) => {
+  try {
+    if (fs.existsSync(filepath)) {
+      return fs.readFileSync(filepath);
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+};
+
 export const createResumePdf = (resume: ResumeData) =>
   new Promise<Buffer>((resolve) => {
     const doc = new PDFDocument({ size: "A4", margin: 40 });
@@ -32,10 +43,20 @@ export const createResumePdf = (resume: ResumeData) =>
     const isCompact = resume.theme?.density === "compact";
     const bodyLineGap = 5;
     const blockSpacing = 18;
-    const photoBuffer = dataUrlToBuffer(resume.personal.photo) ?? fs.readFileSync(DEFAULT_AVATAR);
 
-    doc.registerFont("resume-regular", FONT_REGULAR);
-    doc.registerFont("resume-bold", FONT_BOLD);
+    const photoBuffer = dataUrlToBuffer(resume.personal.photo) ?? safeRead(DEFAULT_AVATAR);
+
+    const hasRegular = !!safeRead(FONT_REGULAR);
+    const hasBold = !!safeRead(FONT_BOLD);
+    const fontRegularName = hasRegular ? "resume-regular" : "Helvetica";
+    const fontBoldName = hasBold ? "resume-bold" : "Helvetica-Bold";
+
+    try {
+      if (hasRegular) doc.registerFont("resume-regular", FONT_REGULAR);
+      if (hasBold) doc.registerFont("resume-bold", FONT_BOLD);
+    } catch {
+      // fallback to built-in fonts
+    }
 
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
@@ -53,19 +74,21 @@ export const createResumePdf = (resume: ResumeData) =>
     const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
 
     // photo clipped to circle
-    doc.save();
-    doc.circle(startX + photoSize / 2, startY + photoSize / 2, photoSize / 2).clip();
-    doc.image(photoBuffer, startX, startY, { width: photoSize, height: photoSize });
-    doc.restore();
+    if (photoBuffer) {
+      doc.save();
+      doc.circle(startX + photoSize / 2, startY + photoSize / 2, photoSize / 2).clip();
+      doc.image(photoBuffer, startX, startY, { width: photoSize, height: photoSize });
+      doc.restore();
+    }
 
     doc
-      .font("resume-bold")
+      .font(fontBoldName)
       .fontSize(20)
       .fillColor("#1d2433")
       .text(fullName || "Имя Фамилия", textX, startY, { width: textWidth });
     doc
       .moveDown(0.2)
-      .font("resume-regular")
+      .font(fontRegularName)
       .fontSize(16)
       .fillColor("#3b4554")
       .text(resume.personal.title || "Желаемая должность", textX, doc.y, { width: textWidth });
@@ -81,8 +104,8 @@ export const createResumePdf = (resume: ResumeData) =>
     if (contacts) {
       doc
         .moveDown(0.6)
-      .fontSize(14)
-      .fillColor("#4b5565")
+        .fontSize(14)
+        .fillColor("#4b5565")
         .text(contacts, textX, doc.y, { width: textWidth });
     }
 
@@ -90,34 +113,32 @@ export const createResumePdf = (resume: ResumeData) =>
 
     const renderSection = (title: string, render: () => void) => {
       doc.moveDown(isCompact ? 1.0 : 1.2);
-      doc.fillColor("#6b7280").font("resume-regular").fontSize(16).text(title);
+      doc.fillColor("#6b7280").font(fontRegularName).fontSize(16).text(title);
       doc.moveDown(isCompact ? 0.4 : 0.5);
-      doc.fillColor("#2f3644").font("resume-regular").fontSize(14);
+      doc.fillColor("#2f3644").font(fontRegularName).fontSize(14);
       render();
     };
 
     if (resume.summary) {
       doc
         .fillColor("#2f3644")
-        .font("resume-regular")
+        .font(fontRegularName)
         .fontSize(14)
         .text(resume.summary, startX, doc.y, { width: contentWidth, lineGap: bodyLineGap });
       // меньше отступа после summary перед опытом
       doc.moveDown(0.4);
     }
 
-    const experience = ensureArray(resume.experience).filter(
-      (item) => item.role || item.company || item.description,
-    );
+    const experience = ensureArray(resume.experience).filter((item) => item.role || item.company || item.description);
     if (experience.length) {
       renderSection("Опыт работы", () => {
         doc.x = startX;
         experience.forEach((item, index) => {
           doc
-            .font("resume-bold")
+            .font(fontBoldName)
             .fontSize(16)
             .text(item.role || "Должность", startX, undefined, { continued: true })
-            .font("resume-regular")
+            .font(fontRegularName)
             .fillColor("#475569")
             .fontSize(16)
             .text(`  ${[item.company || "Компания"].filter(Boolean).join(" • ")}`);
@@ -154,14 +175,14 @@ export const createResumePdf = (resume: ResumeData) =>
         doc.x = startX;
         education.forEach((item, index) => {
           doc
-            .font("resume-bold")
+            .font(fontBoldName)
             .fontSize(16)
             .fillColor("#1f2937")
             .text(item.school || "Учебное заведение", startX, undefined, { width: contentWidth });
           const degreeLine = [item.degree, item.level].filter(Boolean).join(" • ");
           if (degreeLine) {
             doc
-              .font("resume-regular")
+              .font(fontRegularName)
               .fontSize(14)
               .fillColor("#475569")
               .text(degreeLine, { width: contentWidth });
@@ -206,7 +227,7 @@ export const createResumePdf = (resume: ResumeData) =>
 
         skills.forEach((skill) => {
           // Зафиксируем шрифт перед измерениями, чтобы не передавать лишние поля в опции
-          doc.font("resume-regular").fontSize(14);
+          doc.font(fontRegularName).fontSize(14);
 
           const textWidth = doc.widthOfString(skill);
           const chipWidth = textWidth + paddingX * 2;
@@ -225,7 +246,7 @@ export const createResumePdf = (resume: ResumeData) =>
             .roundedRect(x, y, chipWidth, chipHeight, 16)
             .fillAndStroke("#eef2f7", "#eef2f7")
             .fillColor("#2f3644")
-            .font("resume-regular")
+            .font(fontRegularName)
             .fontSize(14)
             .text(skill, x + paddingX, y + offsetY, { width: chipWidth - paddingX * 2, align: "left" });
           doc.restore();
@@ -243,14 +264,14 @@ export const createResumePdf = (resume: ResumeData) =>
       doc.moveDown(isCompact ? 1.2 : 1.5);
       links.forEach((link, index) => {
           if (link.label) {
-          doc.font("resume-bold").fontSize(14).fillColor("#1f2937").text(link.label);
+            doc.font(fontBoldName).fontSize(14).fillColor("#1f2937").text(link.label);
           }
           if (link.url) {
             doc
-              .font("resume-regular")
-            .fontSize(14)
+              .font(fontRegularName)
+              .fontSize(14)
               .fillColor(accent)
-            .text(link.url, { link: link.url, underline: false });
+              .text(link.url, { link: link.url, underline: false });
         }
         if (index !== links.length - 1) {
           doc.moveDown(isCompact ? 0.8 : 1.0);
