@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { PassThrough } from "stream";
 import { createResumePdf } from "@/lib/pdf";
 import type {
   ResumeData,
@@ -65,7 +66,10 @@ export async function POST(request: Request) {
     const resume = normalizeResume(payload);
     const buffer = await createResumePdf(resume);
 
-    return new NextResponse(buffer as unknown as BodyInit, {
+    const stream = new PassThrough();
+    stream.end(buffer);
+
+    return new NextResponse(stream as any, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

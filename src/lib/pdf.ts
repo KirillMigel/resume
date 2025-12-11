@@ -9,8 +9,8 @@ const ensureString = (value: unknown) => (typeof value === "string" ? value : ""
 
 const fontPath = (file: string) => path.join(process.cwd(), "public", "fonts", file);
 const assetPath = (file: string) => path.join(process.cwd(), "public", file);
-const FONT_REGULAR = fontPath("Roboto-Regular.ttf");
-const FONT_BOLD = fontPath("Roboto-Bold.ttf");
+const FONT_REGULAR = fontPath("Inter-Regular.ttf");
+const FONT_BOLD = fontPath("Inter-Regular.ttf"); // используем тот же для “bold”, если нет отдельного
 const DEFAULT_AVATAR = assetPath("avatar.jpg");
 
 const dataUrlToBuffer = (value: string | undefined | null) => {
@@ -48,14 +48,14 @@ export const createResumePdf = (resume: ResumeData) =>
 
     const hasRegular = !!safeRead(FONT_REGULAR);
     const hasBold = !!safeRead(FONT_BOLD);
-    const fontRegularName = hasRegular ? "resume-regular" : "Helvetica";
-    const fontBoldName = hasBold ? "resume-bold" : "Helvetica-Bold";
+    const fontRegularName = hasRegular ? "Inter" : "Times-Roman";
+    const fontBoldName = hasBold ? "InterBold" : fontRegularName;
 
     try {
-      if (hasRegular) doc.registerFont("resume-regular", FONT_REGULAR);
-      if (hasBold) doc.registerFont("resume-bold", FONT_BOLD);
+      if (hasRegular) doc.registerFont("Inter", FONT_REGULAR);
+      if (hasBold) doc.registerFont("InterBold", FONT_BOLD);
     } catch {
-      // fallback to built-in fonts
+      // fallback to встроенный шрифт (Times-Roman), без использования Helvetica
     }
 
     doc.on("data", (chunk) => chunks.push(chunk));
