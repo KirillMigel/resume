@@ -73,10 +73,11 @@ export async function POST(request: Request) {
         "Content-Length": buffer.length.toString(),
       },
     });
-  } catch (error) {
-    console.error(error);
+  } catch (error: unknown) {
+    const err = error as { message?: string; stack?: string };
+    console.error("PDF export failed", err?.message, err?.stack);
     return NextResponse.json(
-      { message: "Не удалось собрать PDF" },
+      { message: err?.message || "Не удалось собрать PDF" },
       {
         status: 400,
       },
