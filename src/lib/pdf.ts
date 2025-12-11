@@ -205,7 +205,10 @@ export const createResumePdf = (resume: ResumeData) =>
         let y = doc.y;
 
         skills.forEach((skill) => {
-          const textWidth = doc.widthOfString(skill, { font: "resume-regular", size: 14 });
+          // Зафиксируем шрифт перед измерениями, чтобы не передавать лишние поля в опции
+          doc.font("resume-regular").fontSize(14);
+
+          const textWidth = doc.widthOfString(skill);
           const chipWidth = textWidth + paddingX * 2;
           if (x + chipWidth > startXChips + maxWidth) {
             x = startXChips;
@@ -214,8 +217,6 @@ export const createResumePdf = (resume: ResumeData) =>
 
           const textHeight = doc.heightOfString(skill, {
             width: chipWidth - paddingX * 2,
-            font: "resume-regular",
-            size: 14,
           });
           const offsetY = (chipHeight - textHeight) / 2;
 
