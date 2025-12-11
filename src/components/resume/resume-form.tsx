@@ -99,10 +99,10 @@ export const ResumeForm = ({
 
   if (activeStep === "experience") {
     return (
-      <Card title="Опыт работы">
+      <Card title="">
         <div className="space-y-6">
           {experience.map((item) => (
-            <div key={item.id} className="rounded-3xl border border-[#eef1f7] bg-[#f9fbff] p-4 sm:p-5">
+            <div key={item.id} className="space-y-4">
               <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                 <input
                   className={inputBubble}
@@ -117,37 +117,40 @@ export const ResumeForm = ({
                   onChange={(event) => updateExperience(item.id, "company", event.target.value)}
                 />
               </div>
-              <div className="mt-4 grid gap-3 md:gap-4 md:grid-cols-2">
+              <div className="grid gap-3 md:gap-4 md:grid-cols-2">
                 <input
+                  type="date"
                   className={inputBubble}
                   placeholder="Начало работы"
                   value={item.startDate || ""}
                   onChange={(event) => updateExperience(item.id, "startDate", event.target.value)}
                 />
                 <input
+                  type="date"
                   className={inputBubble}
                   placeholder="Конец работы"
                   value={item.endDate || ""}
                   onChange={(event) => updateExperience(item.id, "endDate", event.target.value)}
+                  disabled={item.current}
                 />
               </div>
-              <button
-                type="button"
-                className={`mt-4 rounded-full border px-4 py-2 text-sm font-semibold ${
-                  item.current ? "border-[#1891e4] text-[#1891e4]" : "border-[#dfe7f4] text-[#7a879d]"
-                }`}
-                onClick={() => updateExperience(item.id, "current", !item.current)}
-              >
-                Сейчас работаю тут
-              </button>
+              <label className="flex items-center gap-2 text-sm font-semibold text-[#1f2937]">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-[#dfe7f4] text-[#1891e4] focus:ring-[#1891e4]"
+                  checked={item.current}
+                  onChange={() => updateExperience(item.id, "current", !item.current)}
+                />
+                <span>Сейчас работаю тут</span>
+              </label>
               <input
-                className={`${inputBubble} mt-4`}
+                className={`${inputBubble}`}
                 placeholder="Локация"
                 value={item.location || ""}
                 onChange={(event) => updateExperience(item.id, "location", event.target.value)}
               />
               <textarea
-                className={`${textAreaBubble} mt-4 min-h-[140px]`}
+                className={`${textAreaBubble} min-h-[140px]`}
                 placeholder="Обязанности"
                 value={item.description || ""}
                 onChange={(event) => updateExperience(item.id, "description", event.target.value)}
