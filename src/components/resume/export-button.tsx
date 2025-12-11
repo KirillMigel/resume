@@ -18,8 +18,15 @@ export const ExportButton = () => {
         body: JSON.stringify(resume),
       });
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data?.message || "export_failed");
+        let serverMessage = "export_failed";
+        try {
+          const data = await response.json();
+          serverMessage = data?.message || serverMessage;
+        } catch {
+          const text = await response.text();
+          serverMessage = text || serverMessage;
+        }
+        throw new Error(serverMessage);
       }
 
       const blob = await response.blob();
@@ -36,7 +43,8 @@ export const ExportButton = () => {
     } catch (error) {
       console.error(error);
       setStatus("error");
-      setMessage("Не удалось сформировать PDF. Проверьте данные и попробуйте снова.");
+      const err = error as { message?: string };
+      setMessage(err?.message || "Не удалось сформировать PDF. Проверьте данные и попробуйте снова.");
     }
   };
 
