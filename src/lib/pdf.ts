@@ -7,10 +7,7 @@ const ensureArray = <T>(value: T[] | undefined | null): T[] =>
   Array.isArray(value) ? value : [];
 const ensureString = (value: unknown) => (typeof value === "string" ? value : "");
 
-const fontPath = (file: string) => path.join(process.cwd(), "assets", "fonts", file);
 const assetPath = (file: string) => path.join(process.cwd(), "public", file);
-const FONT_REGULAR = fontPath("Inter-Regular.ttf");
-const FONT_BOLD = fontPath("Inter-Bold.ttf");
 const DEFAULT_AVATAR = assetPath("avatar.jpg");
 
 const dataUrlToBuffer = (value: string | undefined | null) => {
@@ -46,17 +43,8 @@ export const createResumePdf = (resume: ResumeData) =>
 
     const photoBuffer = dataUrlToBuffer(resume.personal.photo) ?? safeRead(DEFAULT_AVATAR);
 
-    const regularData = safeRead(FONT_REGULAR);
-    const boldData = safeRead(FONT_BOLD);
-    if (!regularData || !boldData) {
-      throw new Error(
-        `Font files not found. Checked:\n${FONT_REGULAR}\n${FONT_BOLD}`,
-      );
-    }
-    doc.registerFont("Inter", regularData);
-    doc.registerFont("InterBold", boldData);
-    const fontRegularName = "Inter";
-    const fontBoldName = "InterBold";
+    const fontRegularName = "Helvetica";
+    const fontBoldName = "Helvetica-Bold";
 
     doc.on("data", (chunk) => chunks.push(chunk));
     doc.on("error", (err) => reject(err));
