@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  outputFileTracingIncludes: {
-    "/api/export": ["assets/fonts/**/*"],
+  experimental: {
+    outputFileTracingIncludes: {
+      "/api/export": ["./node_modules/pdfkit/js/data/**/*.afm"],
+    },
   },
 };
 
