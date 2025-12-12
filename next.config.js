@@ -2,8 +2,8 @@
 const nextConfig = {
   experimental: {
     outputFileTracingIncludes: {
-      "/**": ["./node_modules/pdfkit/js/data/**/*"],
-      "/api/export": ["./node_modules/pdfkit/js/data/**/*"],
+      "/api/export": ["assets/fonts/**/*"],
+      "/api/**": ["assets/fonts/**/*"],
     },
   },
 };

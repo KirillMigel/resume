@@ -7,8 +7,11 @@ const ensureArray = <T>(value: T[] | undefined | null): T[] =>
   Array.isArray(value) ? value : [];
 const ensureString = (value: unknown) => (typeof value === "string" ? value : "");
 
+const fontPath = (file: string) => path.join(process.cwd(), "assets", "fonts", file);
 const assetPath = (file: string) => path.join(process.cwd(), "public", file);
 const DEFAULT_AVATAR = assetPath("avatar.jpg");
+const FONT_REGULAR = fontPath("Inter-Regular.ttf");
+const FONT_BOLD = fontPath("Inter-Bold.ttf");
 
 const dataUrlToBuffer = (value: string | undefined | null) => {
   if (!value) return null;
@@ -43,6 +46,19 @@ export const createResumePdf = (resume: ResumeData) =>
 
     const photoBuffer = dataUrlToBuffer(resume.personal.photo) ?? safeRead(DEFAULT_AVATAR);
 
+    const regularData = safeRead(FONT_REGULAR);
+    const boldData = safeRead(FONT_BOLD);
+    if (!regularData || !boldData) {
+      return reject(
+        new Error(
+          `Font files not found. Checked:\n${FONT_REGULAR}\n${FONT_BOLD}`,
+        ),
+      );
+    }
+
+    // Регистрируем наши TTF как Helvetica, чтобы не тянуть AFM
+    doc.registerFont("Helvetica", regularData);
+    doc.registerFont("Helvetica-Bold", boldData);
     const fontRegularName = "Helvetica";
     const fontBoldName = "Helvetica-Bold";
 
