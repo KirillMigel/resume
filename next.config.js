@@ -2,7 +2,7 @@
 const nextConfig = {
   experimental: {
     outputFileTracingIncludes: {
-      "/api/export": ["./node_modules/pdfkit/js/data/**/*.afm"],
+      "/api/export": ["assets/fonts/**/*"],
     },
   },
 };
