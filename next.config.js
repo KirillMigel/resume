@@ -2,15 +2,9 @@
 const nextConfig = {
   experimental: {
     outputFileTracingIncludes: {
-      "/api/export": ["./node_modules/pdfkit/js/data/**/*.afm"],
+      "/**": ["./node_modules/pdfkit/js/data/**/*"],
+      "/api/export": ["./node_modules/pdfkit/js/data/**/*"],
     },
-  },
-  webpack: (config) => {
-    config.module.rules.push({
-      test: /\.afm$/,
-      type: "asset/source",
-    });
-    return config;
   },
 };
 
