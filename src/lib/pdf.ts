@@ -9,8 +9,8 @@ const ensureString = (value: unknown) => (typeof value === "string" ? value : ""
 
 const fontPath = (file: string) => path.join(process.cwd(), "public", "fonts", file);
 const assetPath = (file: string) => path.join(process.cwd(), "public", file);
-const FONT_REGULAR = fontPath("Inter-Regular.ttf");
-const FONT_BOLD = fontPath("Inter-Regular.ttf"); // используем тот же для “bold”, если нет отдельного
+const FONT_REGULAR = fontPath("Inter_18pt-Regular.ttf");
+const FONT_BOLD = fontPath("Inter_18pt-Bold.ttf");
 const DEFAULT_AVATAR = assetPath("avatar.jpg");
 
 const dataUrlToBuffer = (value: string | undefined | null) => {
