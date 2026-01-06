@@ -35,10 +35,10 @@ export default function Home() {
             priority
             className="h-auto max-w-[240px] sm:max-w-none sm:w-[127px] sm:h-[112px]"
           />
-          <h1 className="text-[30px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#212633] sm:text-[42px]">
-            создайте эффективное резюме
+          <h1 className="text-[30px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#292E38] sm:text-[42px]">
+            Создайте эффективное резюме
             <br />
-            <span className="text-[#20B2AA]">за несколько минут</span>
+            <span className="text-[#218DD0]">за несколько минут</span>
           </h1>
           <p className="mt-0 text-[16px] font-normal leading-[130%] tracking-[-0.02em] text-[#8a95a8] sm:text-[20px]">
             Чтобы увеличить шанс пройти первичный скрининг
