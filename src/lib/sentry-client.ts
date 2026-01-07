@@ -6,7 +6,10 @@ export function initSentry() {
   if (isInited) return;
   if (typeof window === "undefined") return;
   const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
-  if (!dsn) return;
+  if (!dsn) {
+    console.log("[Sentry] DSN not configured, skipping initialization");
+    return;
+  }
 
   Sentry.init({
     dsn,
@@ -15,7 +18,13 @@ export function initSentry() {
     integrations: [Sentry.browserTracingIntegration()],
   });
 
+  // Делаем Sentry доступным глобально для тестирования
+  if (typeof window !== "undefined") {
+    (window as any).Sentry = Sentry;
+  }
+
   isInited = true;
+  console.log("[Sentry] Initialized successfully");
 }
 
 

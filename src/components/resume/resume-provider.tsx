@@ -70,27 +70,15 @@ export const ResumeProvider = ({ children, resumeId }: { children: ReactNode; re
     let active = true;
     const load = async () => {
       if (authLoading) return;
-      if (resumeId && session) {
-      try {
-          const remote = await fetchResume(resumeId);
-          if (!active) return;
-          if (remote) {
-            startTransition(() => setResume(applyPersonalDefaults(remote)));
-            setReady(true);
-            return;
-          }
-      } catch (error) {
-          console.error("Failed to fetch resume", error);
-        }
-      }
-      startTransition(() => setResume(applyPersonalDefaults(demoResume)));
-    setReady(true);
+      // Убрана автоматическая загрузка резюме по ID - всегда показываем пустую форму
+      startTransition(() => setResume(applyPersonalDefaults(emptyResume())));
+      setReady(true);
     };
     load();
     return () => {
       active = false;
     };
-  }, [resumeId, session, authLoading]);
+  }, [authLoading]);
 
   useEffect(() => {
     if (!isReady || !resumeId || !session) return;

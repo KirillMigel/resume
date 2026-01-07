@@ -22,9 +22,18 @@ const inter = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Resume Lab — конструктор резюме",
+  title: {
+    default: "Resumio — конструктор резюме",
+    template: "%s | Resumio",
+  },
   description:
-    "Сервис для быстрого создания резюме с живым предпросмотром и экспортом в компактный PDF.",
+    "Сервис для быстрого создания резюме с живым предпросмотром и экспортом в компактный PDF. Полезные статьи о карьере в IT.",
+  keywords: ["резюме", "CV", "конструктор резюме", "создать резюме", "IT карьера"],
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    siteName: "Resumio",
+  },
 };
 
 export default function RootLayout({

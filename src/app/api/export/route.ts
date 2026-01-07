@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
-import { PassThrough } from "stream";
-import { createResumePdf } from "@/lib/pdf";
+import puppeteer from "puppeteer";
+import { generateResumeHTML } from "@/lib/pdf-html";
+import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
+import { validatePersonal, validateSkills, validateLinks } from "@/lib/validation";
+import { initSentryServer } from "@/lib/sentry-server";
+import { measureTime, incrementCounter } from "@/lib/metrics";
 import type {
   ResumeData,
   Experience,
@@ -10,6 +14,10 @@ import type {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Rate limiting: 5 PDF генераций в минуту на IP
+const RATE_LIMIT_REQUESTS = 5;
+const RATE_LIMIT_WINDOW = 60000; // 1 минута
 
 const ensureString = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 const mapArray = <T, R>(value: unknown, mapper: (item: T) => R): R[] =>
@@ -61,24 +69,138 @@ const normalizeResume = (payload: Partial<ResumeData>): ResumeData => ({
 });
 
 export async function POST(request: Request) {
+  await initSentryServer();
+  let browser;
   try {
+    // Rate limiting
+    const clientIP = getClientIP(request);
+    const rateLimit = checkRateLimit(`export:${clientIP}`, RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { 
+          message: "Слишком много запросов. Попробуйте позже.",
+          retryAfter: Math.ceil((rateLimit.resetAt - Date.now()) / 1000),
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": Math.ceil((rateLimit.resetAt - Date.now()) / 1000).toString(),
+            "X-RateLimit-Limit": RATE_LIMIT_REQUESTS.toString(),
+            "X-RateLimit-Remaining": rateLimit.remaining.toString(),
+            "X-RateLimit-Reset": rateLimit.resetAt.toString(),
+          },
+        }
+      );
+    }
+
     const payload = (await request.json()) as Partial<ResumeData>;
+    
+    // Валидация размера payload (максимум 10MB)
+    const payloadSize = JSON.stringify(payload).length;
+    const MAX_PAYLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+    if (payloadSize > MAX_PAYLOAD_SIZE) {
+      return NextResponse.json(
+        { message: "Размер данных слишком большой. Максимум 10MB." },
+        { status: 400 }
+      );
+    }
+    
     const resume = normalizeResume(payload);
-    const buffer = await createResumePdf(resume);
+    
+    // Дополнительная валидация критичных полей
+    const validatedPersonal = validatePersonal(resume.personal);
+    resume.personal = { ...resume.personal, ...validatedPersonal };
+    
+    resume.skills = validateSkills(resume.skills);
+    resume.links = validateLinks(resume.links);
+    
+    const html = generateResumeHTML(resume);
 
-    const stream = new PassThrough();
-    stream.end(buffer);
+    // Launch browser с таймаутом
+    const browserLaunchPromise = puppeteer.launch({
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+      timeout: 30000, // 30 секунд на запуск
+    });
+    
+    browser = await Promise.race([
+      browserLaunchPromise,
+      new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error("Browser launch timeout")), 30000)
+      ),
+    ]);
 
-    return new NextResponse(stream as any, {
+    const page = await browser.newPage();
+    
+    // Генерация PDF с измерением времени
+    const pdfBuffer = await measureTime("api.export.pdf_generation", async () => {
+      // Устанавливаем таймаут для генерации PDF (максимум 30 секунд)
+      return await Promise.race([
+        (async () => {
+          // Set content with base64 images support
+          await page.setContent(html, {
+            waitUntil: "networkidle0",
+            timeout: 20000, // 20 секунд на загрузку контента
+          });
+
+          // Generate PDF
+          return await page.pdf({
+            format: "A4",
+            margin: {
+              top: "40px",
+              right: "40px",
+              bottom: "40px",
+              left: "40px",
+            },
+            printBackground: true,
+            timeout: 20000, // 20 секунд на генерацию
+          });
+        })(),
+        new Promise<Buffer>((_, reject) => 
+          setTimeout(() => reject(new Error("PDF generation timeout")), 30000)
+        ),
+      ]);
+    });
+
+    await browser.close();
+    incrementCounter("api.export.success");
+
+    // Конвертируем Buffer в Uint8Array для NextResponse
+    const pdfArray = new Uint8Array(pdfBuffer);
+
+    return new NextResponse(pdfArray, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="resume-${Date.now()}.pdf"`,
-        "Content-Length": buffer.length.toString(),
+        "Content-Length": pdfArray.length.toString(),
       },
     });
   } catch (error: unknown) {
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
     const err = error as { message?: string; stack?: string };
+    
+    incrementCounter("api.export.errors", { error: err?.message || "unknown" });
+    
+    // Логируем в Sentry (если настроен)
+    try {
+      const Sentry = await import("@sentry/nextjs");
+      Sentry.captureException(error, {
+        tags: { endpoint: "/api/export" },
+        extra: { message: err?.message },
+      });
+    } catch {
+      // Sentry не настроен или не доступен
+    }
+    
     console.error("PDF export failed", err?.message, err?.stack);
     return NextResponse.json(
       { message: err?.message || "Не удалось собрать PDF" },

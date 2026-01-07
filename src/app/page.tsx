@@ -22,7 +22,7 @@ export default function Home() {
             className="flex h-10 w-10 items-center justify-center rounded-full border border-[#e3e2e7] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition hover:border-[#218dd0] sm:h-11 sm:w-11"
             aria-label="Профиль"
           >
-            <Image src="/user.svg" alt="Профиль" width={24} height={24} />
+            <Image src="/user.svg" alt="Профиль" width={24} height={24} loading="lazy" />
           </Link>
         </header>
 

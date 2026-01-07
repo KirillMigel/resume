@@ -29,7 +29,7 @@ export const ResumePreview = () => {
   return (
     <div className="flex h-full flex-col rounded-[28px] bg-white px-5 py-6 shadow-[0_25px_70px_rgba(23,56,108,0.08)] sm:rounded-[40px] sm:px-8 sm:py-8">
       <div className="flex items-start gap-4">
-        <div className="h-14 w-14 overflow-hidden rounded-full border-4 border-white shadow-[0_10px_25px_rgba(15,23,42,0.18)] sm:h-16 sm:w-16">
+        <div className="h-14 w-14 overflow-hidden rounded-full border-4 border-white sm:h-16 sm:w-16">
           <img src={photoSrc} alt="Avatar" className="h-full w-full object-cover" />
         </div>
         <div className="space-y-1">
@@ -64,7 +64,7 @@ export const ResumePreview = () => {
         <div className="space-y-8">
           {resume.summary ? (
             <Section title=" " accent={accent}>
-              <p className={`text-[14px] text-[#2f3644] ${lineGap}`}>{resume.summary}</p>
+              <p className={`text-[14px] text-[#2f3644] ${lineGap} whitespace-pre-wrap`}>{resume.summary}</p>
             </Section>
           ) : null}
 
@@ -92,7 +92,7 @@ export const ResumePreview = () => {
                       ) : null}
                     </div>
                     {item.description ? (
-                      <p className={`text-[14px] text-[#2f3644] ${lineGap}`}>{item.description}</p>
+                      <p className={`text-[14px] text-[#2f3644] ${lineGap} whitespace-pre-wrap`}>{item.description}</p>
                     ) : null}
                   </div>
                 ))}
@@ -119,7 +119,7 @@ export const ResumePreview = () => {
                       ) : null}
                     </div>
                     {item.description ? (
-                      <p className={`text-[14px] text-[#2f3644] ${lineGap}`}>{item.description}</p>
+                      <p className={`text-[14px] text-[#2f3644] ${lineGap} whitespace-pre-wrap`}>{item.description}</p>
                     ) : null}
                   </div>
                 ))}

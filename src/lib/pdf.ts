@@ -1,4 +1,5 @@
-import PDFDocument from "pdfkit";
+import { PDFDocument, rgb, PDFFont, PDFPage } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import fs from "node:fs";
 import path from "node:path";
 import { ResumeData } from "@/lib/resume-data";
@@ -10,8 +11,6 @@ const ensureString = (value: unknown) => (typeof value === "string" ? value : ""
 const fontPath = (file: string) => path.join(process.cwd(), "assets", "fonts", file);
 const assetPath = (file: string) => path.join(process.cwd(), "public", file);
 const DEFAULT_AVATAR = assetPath("avatar.jpg");
-const FONT_REGULAR = fontPath("Inter-Regular.ttf");
-const FONT_BOLD = fontPath("Inter-Bold.ttf");
 
 const dataUrlToBuffer = (value: string | undefined | null) => {
   if (!value) return null;
@@ -35,68 +34,204 @@ const safeRead = (filepath: string) => {
   return null;
 };
 
-export const createResumePdf = (resume: ResumeData) =>
-  new Promise<Buffer>((resolve, reject) => {
-    const doc = new PDFDocument({ size: "A4", margin: 40 });
-    const chunks: Buffer[] = [];
-    const accent = resume.theme?.accent || "#218dd0";
-    const isCompact = resume.theme?.density === "compact";
-    const bodyLineGap = 5;
-    const blockSpacing = 18;
+const hexToRgb = (hex: string): [number, number, number] => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return [0.13, 0.55, 0.82]; // default blue
+  return [
+    parseInt(result[1], 16) / 255,
+    parseInt(result[2], 16) / 255,
+    parseInt(result[3], 16) / 255,
+  ];
+};
 
-    const photoBuffer = dataUrlToBuffer(resume.personal.photo) ?? safeRead(DEFAULT_AVATAR);
+export const createResumePdf = async (resume: ResumeData): Promise<Buffer> => {
+  const pdfDoc = await PDFDocument.create();
+  
+  // Register fontkit for custom fonts
+  pdfDoc.registerFontkit(fontkit);
+  
+  const page = pdfDoc.addPage([595, 842]); // A4 size in points
+  const { width, height } = page.getSize();
+  const margin = 40;
+  const startX = margin;
+  const startY = height - margin;
+  const contentWidth = width - margin * 2;
 
-    const regularData = safeRead(FONT_REGULAR);
-    const boldData = safeRead(FONT_BOLD);
-    if (!regularData || !boldData) {
-      return reject(
-        new Error(
-          `Font files not found. Checked:\n${FONT_REGULAR}\n${FONT_BOLD}`,
-        ),
-      );
+  const accent = resume.theme?.accent || "#218dd0";
+  const accentRgb = hexToRgb(accent);
+  const isCompact = resume.theme?.density === "compact";
+
+  // Load fonts
+  const fontRegularPath = fontPath("Inter-Regular.ttf");
+  const fontBoldPath = fontPath("Inter-Bold.ttf");
+  
+  const fontRegularData = safeRead(fontRegularPath);
+  const fontBoldData = safeRead(fontBoldPath);
+
+  let fontRegular: PDFFont;
+  let fontBold: PDFFont;
+
+  if (fontRegularData && fontBoldData) {
+    fontRegular = await pdfDoc.embedFont(fontRegularData);
+    fontBold = await pdfDoc.embedFont(fontBoldData);
+  } else {
+    // Fallback to standard fonts
+    fontRegular = await pdfDoc.embedFont("Helvetica");
+    fontBold = await pdfDoc.embedFont("Helvetica-Bold");
+  }
+
+  let currentY = startY;
+
+  // Helper to wrap text and calculate height
+  const wrapText = (text: string, font: PDFFont, size: number, maxWidth: number): string[] => {
+    if (!text || !text.trim()) return [];
+    
+    const words = text.trim().split(/\s+/);
+    if (words.length === 0) return [];
+    
+    const lines: string[] = [];
+    let currentLine = "";
+
+    words.forEach((word) => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      let width: number;
+      
+      try {
+        width = font.widthOfTextAtSize(testLine, size);
+      } catch {
+        // Fallback: estimate width (rough approximation)
+        width = testLine.length * size * 0.6;
+      }
+      
+      if (width > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+        // If single word is too long, force it anyway
+        try {
+          const wordWidth = font.widthOfTextAtSize(word, size);
+          if (wordWidth > maxWidth) {
+            lines.push(word);
+            currentLine = "";
+          }
+        } catch {
+          // If we can't measure, just add it
+          lines.push(word);
+          currentLine = "";
+        }
+      } else {
+        currentLine = testLine;
+      }
+    });
+    
+    if (currentLine) {
+      lines.push(currentLine);
     }
+    
+    return lines.length > 0 ? lines : [text]; // Fallback to original text if empty
+  };
 
-    // Регистрируем наши TTF как Helvetica, чтобы не тянуть AFM
-    doc.registerFont("Helvetica", regularData);
-    doc.registerFont("Helvetica-Bold", boldData);
-    const fontRegularName = "Helvetica";
-    const fontBoldName = "Helvetica-Bold";
+  // Helper to add text and return new Y position
+  const addText = (
+    text: string,
+    x: number,
+    y: number,
+    options: {
+      font?: PDFFont;
+      size?: number;
+      color?: [number, number, number];
+      maxWidth?: number;
+      lineHeight?: number;
+    } = {}
+  ): number => {
+    const {
+      font = fontRegular,
+      size = 14,
+      color = [0.18, 0.18, 0.18],
+      maxWidth = contentWidth,
+      lineHeight = 1.5,
+    } = options;
 
-    doc.on("data", (chunk) => chunks.push(chunk));
-    doc.on("error", (err) => reject(err));
-    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    if (!text || !text.trim()) return y;
 
-    const headerColor = "#0f172a";
-    doc.fillColor(headerColor);
-    const fullName = [resume.personal.fullName, resume.personal.lastName].filter(Boolean).join(" ").trim();
+    // Split by explicit line breaks first
+    const paragraphs = text.split("\n").map(p => p.trim()).filter(p => p);
+    if (paragraphs.length === 0) return y;
 
-    // Header layout with photo
-    const startX = doc.page.margins.left;
-    const startY = doc.page.margins.top;
-    const photoSize = 86;
-    const textX = startX + photoSize + 18;
-    const textWidth = doc.page.width - textX - doc.page.margins.right;
-    const contentWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    let lineY = y;
+    const lineSpacing = size * lineHeight;
+    let totalLines = 0;
 
-    // photo clipped to circle
-    if (photoBuffer) {
-      doc.save();
-      doc.circle(startX + photoSize / 2, startY + photoSize / 2, photoSize / 2).clip();
-      doc.image(photoBuffer, startX, startY, { width: photoSize, height: photoSize });
-      doc.restore();
+    paragraphs.forEach((paragraph, paraIndex) => {
+      // Wrap each paragraph
+      const lines = wrapText(paragraph, font, size, maxWidth);
+      
+      if (lines.length === 0) return;
+      
+      lines.forEach((line) => {
+        page.drawText(line, {
+          x,
+          y: lineY,
+          size,
+          font,
+          color: rgb(color[0], color[1], color[2]),
+        });
+        lineY -= lineSpacing;
+        totalLines++;
+      });
+
+      // Add extra space between paragraphs (but not after last paragraph)
+      if (paraIndex < paragraphs.length - 1) {
+        lineY -= size * 0.3;
+      }
+    });
+
+    // Return the final Y position - this is where the next element should start
+    return lineY;
+  };
+
+  // Photo
+  const photoSize = 86;
+  const photoBuffer = dataUrlToBuffer(resume.personal.photo) ?? safeRead(DEFAULT_AVATAR);
+  if (photoBuffer) {
+    try {
+      let image;
+      try {
+        image = await pdfDoc.embedPng(photoBuffer);
+      } catch {
+        image = await pdfDoc.embedJpg(photoBuffer);
+      }
+      const imageDims = image.scale(photoSize / image.width);
+      page.drawImage(image, {
+        x: startX,
+        y: currentY - photoSize,
+        width: imageDims.width,
+        height: imageDims.height,
+      });
+    } catch {
+      // Skip photo if embedding fails
     }
+  }
 
-    doc
-      .font(fontBoldName)
-      .fontSize(20)
-      .fillColor("#1d2433")
-      .text(fullName || "Имя Фамилия", textX, startY, { width: textWidth });
-    doc
-      .moveDown(0.2)
-      .font(fontRegularName)
-      .fontSize(16)
-      .fillColor("#3b4554")
-      .text(resume.personal.title || "Желаемая должность", textX, doc.y, { width: textWidth });
+  // Header text
+  const textX = startX + photoSize + 18;
+  const textWidth = contentWidth - photoSize - 18;
+  const fullName = [resume.personal.fullName, resume.personal.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  currentY = addText(fullName || "Имя Фамилия", textX, currentY, {
+    font: fontBold,
+    size: 20,
+    color: [0.11, 0.14, 0.20],
+    maxWidth: textWidth,
+  });
+
+  currentY = addText(resume.personal.title || "Желаемая должность", textX, currentY, {
+    size: 16,
+    color: [0.23, 0.27, 0.33],
+    maxWidth: textWidth,
+  });
 
     const contacts = [
       ensureString(resume.personal.email),
@@ -106,183 +241,232 @@ export const createResumePdf = (resume: ResumeData) =>
     ]
       .filter(Boolean)
       .join("  •  ");
+
     if (contacts) {
-      doc
-        .moveDown(0.6)
-        .fontSize(14)
-        .fillColor("#4b5565")
-        .text(contacts, textX, doc.y, { width: textWidth });
-    }
+    currentY = addText(contacts, textX, currentY, {
+      size: 14,
+      color: [0.29, 0.34, 0.39],
+      maxWidth: textWidth,
+    });
+  }
 
-    doc.moveDown(1);
+  currentY -= isCompact ? 15 : 20;
 
-    const renderSection = (title: string, render: () => void) => {
-      doc.moveDown(isCompact ? 1.0 : 1.2);
-      doc.fillColor("#6b7280").font(fontRegularName).fontSize(16).text(title);
-      doc.moveDown(isCompact ? 0.4 : 0.5);
-      doc.fillColor("#2f3644").font(fontRegularName).fontSize(14);
-      render();
-    };
-
+  // Summary
     if (resume.summary) {
-      doc
-        .fillColor("#2f3644")
-        .font(fontRegularName)
-        .fontSize(14)
-        .text(resume.summary, startX, doc.y, { width: contentWidth, lineGap: bodyLineGap });
-      // меньше отступа после summary перед опытом
-      doc.moveDown(0.4);
-    }
+    currentY = addText(resume.summary, startX, currentY, {
+      size: 14,
+      color: [0.18, 0.21, 0.27],
+      maxWidth: contentWidth,
+      lineHeight: 1.5,
+    });
+    currentY -= isCompact ? 8 : 12;
+  }
 
-    const experience = ensureArray(resume.experience).filter((item) => item.role || item.company || item.description);
+  // Experience
+    const experience = ensureArray(resume.experience).filter(
+    (item) => item.role || item.company || item.description
+    );
     if (experience.length) {
-      renderSection("Опыт работы", () => {
-        doc.x = startX;
-        experience.forEach((item, index) => {
-          doc
-            .font(fontBoldName)
-            .fontSize(16)
-            .text(item.role || "Должность", startX, undefined, { continued: true })
-            .font(fontRegularName)
-            .fillColor("#475569")
-            .fontSize(16)
-            .text(`  ${[item.company || "Компания"].filter(Boolean).join(" • ")}`);
-          const endDate = item.current && !item.endDate ? "Настоящее время" : item.endDate;
-          const dates = [item.startDate, endDate].filter(Boolean).join(" — ");
-          const locationLine = [item.location].filter(Boolean).join("");
-          const datesAndLocation = [dates, locationLine].filter(Boolean).join("  •  ");
-          if (datesAndLocation) {
-            doc.fontSize(14).fillColor("#94a3b8").text(datesAndLocation, { width: contentWidth });
-          }
-          if (item.description) {
-            const bullets = item.description
-              .split("\n")
-              .map((line) => line.trim())
-              .filter(Boolean);
-            doc.moveDown(0.3);
-            doc
-              .fontSize(14)
-              .fillColor("#2f3644")
-              .text(bullets.join("\n"), { width: contentWidth, lineGap: bodyLineGap });
-          }
-          if (index !== experience.length - 1) {
-            doc.moveDown(isCompact ? 1.1 : 1.3);
-          }
-        });
-      });
-    }
+    currentY -= isCompact ? 12 : 18;
+    currentY = addText("Опыт работы", startX, currentY, {
+      size: 16,
+      color: [0.42, 0.45, 0.50],
+      maxWidth: contentWidth,
+    });
+    currentY -= 10;
 
+    experience.forEach((item, expIndex) => {
+      const roleText = `${item.role || "Должность"}  ${item.company || "Компания"}`;
+      currentY = addText(roleText, startX, currentY, {
+        font: fontBold,
+        size: 16,
+        color: [0.12, 0.16, 0.22],
+        maxWidth: contentWidth,
+        lineHeight: 1.3,
+      });
+
+      const endDate = item.current && !item.endDate ? "Настоящее время" : item.endDate;
+      const dates = [item.startDate, endDate].filter(Boolean).join(" — ");
+      const locationLine = item.location ? `  •  ${item.location}` : "";
+      const datesAndLocation = dates + locationLine;
+
+      if (datesAndLocation) {
+        currentY -= 4;
+        currentY = addText(datesAndLocation, startX, currentY, {
+          size: 14,
+          color: [0.58, 0.64, 0.72],
+          maxWidth: contentWidth,
+          lineHeight: 1.3,
+        });
+      }
+
+      if (item.description) {
+        currentY -= 6;
+        currentY = addText(item.description, startX, currentY, {
+          size: 14,
+          color: [0.18, 0.21, 0.27],
+          maxWidth: contentWidth,
+          lineHeight: 1.5,
+        });
+      }
+
+      // Consistent spacing between items (but not after last)
+      if (expIndex < experience.length - 1) {
+        currentY -= isCompact ? 14 : 18;
+      }
+    });
+  }
+
+  // Education
     const education = ensureArray(resume.education).filter(
-      (item) => item.school || item.degree || item.level || item.description,
+    (item) => item.school || item.degree || item.level || item.description
     );
     if (education.length) {
-      renderSection("Образование", () => {
-        doc.x = startX;
-        education.forEach((item, index) => {
-          doc
-            .font(fontBoldName)
-            .fontSize(16)
-            .fillColor("#1f2937")
-            .text(item.school || "Учебное заведение", startX, undefined, { width: contentWidth });
-          const degreeLine = [item.degree, item.level].filter(Boolean).join(" • ");
-          if (degreeLine) {
-            doc
-              .font(fontRegularName)
-              .fontSize(14)
-              .fillColor("#475569")
-              .text(degreeLine, { width: contentWidth });
-          }
-          const locationLine = ensureString(item.location);
-          if (locationLine) {
-            doc.fontSize(14).fillColor("#5f6b84").text(locationLine, { width: contentWidth });
-          }
-          const dates = [
-            item.startDate,
-            item.current && !item.endDate ? "Настоящее время" : item.endDate,
-          ]
-            .filter(Boolean)
-            .join(" — ");
-          if (dates) {
-            doc.fontSize(14).fillColor("#94a3b8").text(dates, { width: contentWidth });
-          }
-          if (item.description) {
-            doc
-              .fontSize(14)
-              .fillColor("#2f3644")
-              .text(item.description, { width: contentWidth, lineGap: bodyLineGap });
-          }
-          if (index !== education.length - 1) {
-            doc.moveDown(isCompact ? 1.1 : 1.3);
-          }
-          doc.fillColor("#2f3644").fontSize(14);
-        });
-      });
-    }
+    currentY -= isCompact ? 18 : 24;
+    currentY = addText("Образование", startX, currentY, {
+      size: 16,
+      color: [0.42, 0.45, 0.50],
+      maxWidth: contentWidth,
+    });
+    currentY -= 10;
 
+    education.forEach((item, eduIndex) => {
+      currentY = addText(item.school || "Учебное заведение", startX, currentY, {
+        font: fontBold,
+        size: 16,
+        color: [0.12, 0.16, 0.22],
+        maxWidth: contentWidth,
+        lineHeight: 1.3,
+      });
+
+      const degreeLine = [item.degree, item.level].filter(Boolean).join(" • ");
+      if (degreeLine) {
+        currentY -= 2;
+        currentY = addText(degreeLine, startX, currentY, {
+          size: 14,
+          color: [0.28, 0.34, 0.41],
+          maxWidth: contentWidth,
+          lineHeight: 1.3,
+        });
+      }
+
+      if (item.location) {
+        currentY -= 2;
+        currentY = addText(item.location, startX, currentY, {
+          size: 14,
+          color: [0.37, 0.42, 0.52],
+          maxWidth: contentWidth,
+          lineHeight: 1.3,
+        });
+      }
+
+      const dates = [
+        item.startDate,
+        item.current && !item.endDate ? "Настоящее время" : item.endDate,
+      ]
+        .filter(Boolean)
+        .join(" — ");
+      if (dates) {
+        currentY -= 2;
+        currentY = addText(dates, startX, currentY, {
+          size: 14,
+          color: [0.58, 0.64, 0.72],
+          maxWidth: contentWidth,
+          lineHeight: 1.3,
+        });
+      }
+
+      if (item.description) {
+        currentY -= 6;
+        currentY = addText(item.description, startX, currentY, {
+          size: 14,
+          color: [0.18, 0.21, 0.27],
+          maxWidth: contentWidth,
+          lineHeight: 1.5,
+        });
+      }
+
+      // Add spacing between education items (but not after last)
+      if (eduIndex < education.length - 1) {
+        currentY -= isCompact ? 12 : 16;
+      }
+    });
+  }
+
+  // Skills
     const skills = ensureArray<string>(resume.skills).filter(Boolean);
     if (skills.length) {
-      renderSection("Навыки", () => {
-        const paddingX = 14;
-        const chipHeight = 32;
-        const chipGap = 8; // увеличил вертикальный зазор между рядами
-        const startXChips = startX;
-        const maxWidth = doc.page.width - doc.page.margins.right - startXChips;
-        let x = startXChips;
-        let y = doc.y;
+    currentY -= isCompact ? 20 : 30;
+    currentY = addText("Навыки", startX, currentY, {
+      size: 16,
+      color: [0.42, 0.45, 0.50],
+      maxWidth: contentWidth,
+    });
+    currentY -= 10;
 
-        skills.forEach((skill) => {
-          // Зафиксируем шрифт перед измерениями, чтобы не передавать лишние поля в опции
-          doc.font(fontRegularName).fontSize(14);
+    let chipX = startX;
+    const chipHeight = 24;
+    const chipGap = 8;
+    let chipY = currentY;
 
-          const textWidth = doc.widthOfString(skill);
-          const chipWidth = textWidth + paddingX * 2;
-          if (x + chipWidth > startXChips + maxWidth) {
-            x = startXChips;
-            y += chipHeight + chipGap;
-          }
+    skills.forEach((skill) => {
+      const textWidth = fontRegular.widthOfTextAtSize(skill, 14);
+      const chipWidth = textWidth + 28;
 
-          const textHeight = doc.heightOfString(skill, {
-            width: chipWidth - paddingX * 2,
-          });
-          const offsetY = (chipHeight - textHeight) / 2;
+      if (chipX + chipWidth > startX + contentWidth) {
+        chipX = startX;
+        chipY -= chipHeight + chipGap;
+      }
 
-          doc
-            .save()
-            .roundedRect(x, y, chipWidth, chipHeight, 16)
-            .fillAndStroke("#eef2f7", "#eef2f7")
-            .fillColor("#2f3644")
-            .font(fontRegularName)
-            .fontSize(14)
-            .text(skill, x + paddingX, y + offsetY, { width: chipWidth - paddingX * 2, align: "left" });
-          doc.restore();
-
-          x += chipWidth + chipGap;
-        });
-
-        // move cursor below chips
-        doc.y = y + chipHeight + chipGap;
+      page.drawRectangle({
+        x: chipX,
+        y: chipY - chipHeight,
+        width: chipWidth,
+        height: chipHeight,
+        color: rgb(0.93, 0.95, 0.97),
+        borderColor: rgb(0.93, 0.95, 0.97),
+        borderWidth: 0,
       });
-    }
 
+      page.drawText(skill, {
+        x: chipX + 14,
+        y: chipY - chipHeight + 5,
+        size: 14,
+        font: fontRegular,
+        color: rgb(0.18, 0.21, 0.27),
+      });
+
+      chipX += chipWidth + chipGap;
+    });
+
+    currentY = chipY - chipHeight - 20;
+  }
+
+  // Links
     const links = ensureArray(resume.links).filter((link) => link.label || link.url);
     if (links.length) {
-      doc.moveDown(isCompact ? 1.2 : 1.5);
-      links.forEach((link, index) => {
+    currentY -= isCompact ? 20 : 30;
+        links.forEach((link) => {
           if (link.label) {
-            doc.font(fontBoldName).fontSize(14).fillColor("#1f2937").text(link.label);
+        currentY = addText(link.label, startX, currentY, {
+          font: fontBold,
+          size: 14,
+          color: [0.12, 0.16, 0.22],
+          maxWidth: contentWidth,
+        });
           }
           if (link.url) {
-            doc
-              .font(fontRegularName)
-              .fontSize(14)
-              .fillColor(accent)
-              .text(link.url, { link: link.url, underline: false });
-        }
-        if (index !== links.length - 1) {
-          doc.moveDown(isCompact ? 0.8 : 1.0);
-          }
-      });
-    }
+        currentY = addText(link.url, startX, currentY, {
+          size: 14,
+          color: accentRgb,
+          maxWidth: contentWidth,
+        });
+      }
+      currentY -= 15;
+    });
+  }
 
-    doc.end();
-  });
+  const pdfBytes = await pdfDoc.save();
+  return Buffer.from(pdfBytes);
+};

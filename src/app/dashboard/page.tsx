@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
-import { demoResume } from "@/lib/resume-data";
 import { createResume, deleteResume, fetchResumes, type ResumeListItem } from "@/lib/supabase/resumes";
 
 export default function DashboardPage() {
@@ -28,22 +27,39 @@ export default function DashboardPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
+  const loadResumes = async () => {
     if (isLoading) return;
     if (!session) {
       router.replace("/auth");
       return;
     }
     setStatus("loading");
-    fetchResumes()
-      .then((data) => setItems(data))
-      .catch((error) => {
-        console.error(error);
-        setMessage("Не удалось загрузить резюме.");
-        setStatus("error");
-      })
-      .finally(() => setStatus("idle"));
+    try {
+      const data = await fetchResumes();
+      setItems(data);
+    } catch (error) {
+      console.error(error);
+      setMessage("Не удалось загрузить резюме.");
+      setStatus("error");
+    } finally {
+      setStatus("idle");
+    }
+  };
+
+  useEffect(() => {
+    loadResumes();
   }, [session, isLoading, router]);
+
+  // Обновляем список при возврате на страницу (например, после редактирования)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (session && !isLoading) {
+        loadResumes();
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [session, isLoading]);
 
   const handleCreate = async () => {
     if (!session?.user?.id) {
@@ -52,11 +68,12 @@ export default function DashboardPage() {
     }
     try {
       setStatus("loading");
+      const { emptyResume } = await import("@/lib/resume-data");
       const id = await createResume({
         title: "Новое резюме",
         data: {
-          ...demoResume,
-          personal: { ...demoResume.personal, title: "Новое резюме" },
+          ...emptyResume(),
+          personal: { ...emptyResume().personal, title: "Новое резюме" },
         },
         userId: session.user.id,
       });
@@ -90,15 +107,20 @@ export default function DashboardPage() {
     }
     try {
       setStatus("loading");
+      // Загружаем реальные данные резюме для дублирования
+      const { fetchResume } = await import("@/lib/supabase/resumes");
+      const originalResume = await fetchResume(id);
+      if (!originalResume) {
+        setMessage("Не удалось загрузить резюме для дублирования.");
+        setStatus("idle");
+        return;
+      }
       const newId = await createResume({
         title: `${src?.title || "Резюме"} копия`,
-        data: {
-          ...demoResume,
-          personal: { ...demoResume.personal, title: src?.title || "Резюме" },
-        },
+        data: originalResume,
         userId: session.user.id,
       });
-      setItems((prev) => [{ id: newId, title: src?.title || "Резюме", updated_at: new Date().toISOString() }, ...prev]);
+      setItems((prev) => [{ id: newId, title: `${src?.title || "Резюме"} копия`, updated_at: new Date().toISOString() }, ...prev]);
     } catch (error) {
       console.error(error);
       setMessage("Не удалось дублировать резюме.");
@@ -124,14 +146,22 @@ export default function DashboardPage() {
         <section className="space-y-6">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
-              <Image src="/resumio-logo.svg" alt="Resumio" width={143} height={40} priority />
+              <Link href="/">
+                <Image src="/resumio-logo.svg" alt="Resumio" width={143} height={40} priority />
+              </Link>
+              <Link
+                href="/blog"
+                className="text-sm font-medium text-[#333948] transition hover:text-[#218dd0] sm:text-base"
+              >
+                Блог
+              </Link>
             </div>
             <div className="relative">
               <div
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-[#e3e2e7] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]"
                 onMouseEnter={() => setProfileOpen(true)}
               >
-                <Image src="/user.svg" alt="Профиль" width={24} height={24} />
+                <Image src="/user.svg" alt="Профиль" width={24} height={24} loading="lazy" />
               </div>
               {isProfileOpen && (
                 <div className="absolute right-0 z-20 mt-3 w-44 rounded-2xl bg-white p-3 text-sm text-[#2f3644] shadow-[0_20px_50px_rgba(15,23,42,0.12)]">
@@ -168,9 +198,19 @@ export default function DashboardPage() {
 
           {status === "loading" && <p className="text-sm text-[#6b7280]">Загружаем...</p>}
           {message && <p className="text-sm text-[#d03b3b]">{message}</p>}
-          {items.length === 0 && status === "idle" ? (
+          {!session && !isLoading ? (
+            <div className="rounded-[28px] bg-white p-8 text-center shadow-[0_5px_25px_rgba(120,120,120,0.1)]">
+              <p className="mb-4 text-base text-[#1f2937]">Для создания резюме необходимо войти в систему</p>
+              <Link
+                href="/auth"
+                className="inline-flex items-center justify-center rounded-full bg-[#1891e4] px-6 py-3 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(24,145,228,0.35)] transition hover:bg-[#0c74c1]"
+              >
+                Войти или зарегистрироваться
+              </Link>
+            </div>
+          ) : items.length === 0 && status === "idle" ? (
             <div className="rounded-[28px] bg-white p-6 text-sm text-[#6b7280] shadow-[0_5px_25px_rgba(120,120,120,0.1)]">
-              У вас пока нет резюме. Нажмите «Создать новое», чтобы начать.
+              У вас пока нет резюме. Нажмите «Создать резюме», чтобы начать.
             </div>
           ) : (
             <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
@@ -178,8 +218,8 @@ export default function DashboardPage() {
                 const date = formatDate(resume.updated_at) || "—";
                 const isMenuOpen = openMenuId === resume.id;
                 return (
-                  <article
-                    key={resume.id}
+              <article
+                key={resume.id}
                     role="button"
                     tabIndex={0}
                     onClick={() => handleOpenResume(resume.id)}
@@ -191,21 +231,22 @@ export default function DashboardPage() {
                     }}
                     className="group relative flex cursor-pointer flex-col gap-3 rounded-[28px] bg-white px-5 py-4 shadow-[0_5px_25px_rgba(120,120,120,0.1)] transition hover:shadow-[0_7px_30px_rgba(120,120,120,0.12)] focus:outline-none focus:ring-2 focus:ring-[#0b85e9]/50 sm:flex-row sm:items-center sm:justify-between"
               >
-                    <div className="flex items-center gap-4">
-                      <img
+                <div className="flex items-center gap-4">
+                      <Image
                         src={resume.photo || "/avatar.jpg"}
-                    alt="avatar"
+                        alt="avatar"
                         width={58}
                         height={58}
+                        loading="lazy"
                         className="h-[58px] w-[58px] rounded-2xl object-cover"
                   />
-                      <div>
+                  <div>
                         <p className="text-base font-semibold text-[#1c2335] transition-colors group-hover:text-[#218dd0] sm:text-lg">
                           {resume.role || resume.title || "Резюме"}
                         </p>
                         <p className="text-sm text-[#8a96ad]">{date}</p>
-                      </div>
-                    </div>
+                  </div>
+                </div>
                     <div className="flex items-center gap-3 self-end sm:self-auto">
                       <button
                         type="button"
@@ -246,11 +287,11 @@ export default function DashboardPage() {
                   </button>
                         </div>
                       )}
-                    </div>
-                  </article>
+                </div>
+              </article>
                 );
               })}
-            </div>
+          </div>
           )}
         </section>
       </div>

@@ -18,6 +18,17 @@ export default function AuthPage() {
       setStatus("error");
       return;
     }
+    
+    // Проверка конфигурации Supabase
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey || supabaseUrl === "https://example.supabase.co") {
+      setStatus("error");
+      setMessage("Supabase не настроен. Создайте файл .env.local с переменными NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY");
+      return;
+    }
+    
     setStatus("loading");
     setMessage("");
     try {
@@ -41,6 +52,10 @@ export default function AuthPage() {
     }
   };
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const isSupabaseConfigured = supabaseUrl && supabaseKey && supabaseUrl !== "https://example.supabase.co";
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f7fbff] px-4">
       <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-[0_25px_80px_rgba(23,56,108,0.08)]">
@@ -48,6 +63,24 @@ export default function AuthPage() {
         <p className="mt-2 text-sm text-[#6b7280]">
           Укажите почту и пароль, чтобы войти или создать аккаунт.
         </p>
+        {!isSupabaseConfigured && (
+          <div className="mt-4 rounded-lg bg-yellow-50 border border-yellow-200 p-4">
+            <p className="text-sm font-semibold text-yellow-800 mb-2">⚠️ Supabase не настроен</p>
+            <p className="text-xs text-yellow-700">
+              Создайте файл <code className="bg-yellow-100 px-1 rounded">.env.local</code> в корне проекта с переменными:
+            </p>
+            <pre className="mt-2 text-xs bg-yellow-100 p-2 rounded overflow-x-auto">
+{`NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...`}
+            </pre>
+            <p className="text-xs text-yellow-700 mt-2">
+              Получите эти значения на{" "}
+              <a href="https://app.supabase.com" target="_blank" rel="noopener noreferrer" className="underline">
+                app.supabase.com
+              </a>
+            </p>
+          </div>
+        )}
         <div className="mt-6 space-y-4">
           <input
             type="email"

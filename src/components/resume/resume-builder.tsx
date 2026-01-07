@@ -93,7 +93,7 @@ export const ResumeBuilder = ({ resumeId }: { resumeId?: string }) => {
                   {showPreview ? "Скрыть превью" : "Показать превью"}
                 </button>
               )}
-              <ExportButton />
+            <ExportButton />
             </div>
           </header>
 
@@ -111,18 +111,18 @@ export const ResumeBuilder = ({ resumeId }: { resumeId?: string }) => {
               {showPreview && <ResumePreview />}
             </div>
           ) : (
-            <div className="builder-grid">
-              <StepSidebar activeStep={activeStep} onSelect={setActiveStep} />
-              <ResumeForm
-                activeLabel={activeConfig?.label ?? ""}
-                activeStep={activeStep}
-                onPrev={prevStep}
-                onNext={nextStep}
-                canPrev={canPrev}
-                canNext={canNext}
-              />
-              <ResumePreview />
-            </div>
+          <div className="builder-grid">
+            <StepSidebar activeStep={activeStep} onSelect={setActiveStep} />
+            <ResumeForm
+              activeLabel={activeConfig?.label ?? ""}
+              activeStep={activeStep}
+              onPrev={prevStep}
+              onNext={nextStep}
+              canPrev={canPrev}
+              canNext={canNext}
+            />
+            <ResumePreview />
+          </div>
           )}
         </div>
       </div>
