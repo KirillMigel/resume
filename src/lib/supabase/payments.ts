@@ -167,8 +167,11 @@ export const isResumePaid = async (resumeId: string, userId?: string): Promise<b
   }
 
   // Дополнительная проверка прав доступа
-  if (userId && data && (data as { user_id: string }).user_id !== userId) {
-    return false;
+  if (userId && data) {
+    const resumeData = data as { user_id?: string };
+    if (resumeData.user_id && resumeData.user_id !== userId) {
+      return false;
+    }
   }
 
   return (data as { is_paid: boolean }).is_paid ?? false;
